@@ -37,11 +37,13 @@ public class EstablishedClientChannelBuilderImpl implements EstablishedClientCha
         this.withGuestAuthentication()
             .withIdentity(new Identity(UUID.randomUUID().toString(), clientChannelBuilder.getServerURI().getHost()))
             .withSessionEncryption(SessionEncryption.TLS)
-            .withEstablishmentTimeout(30);
+            .withEstablishmentTimeout(30000);
 
         try {
             withInstance(InetAddress.getLocalHost().getHostName());
-        } catch (UnknownHostException e) { withInstance("default"); }
+        } catch (UnknownHostException e) {
+            withInstance("default");
+        }
     }
 
     @Override
@@ -100,8 +102,8 @@ public class EstablishedClientChannelBuilderImpl implements EstablishedClientCha
     }
 
     @Override
-    public EstablishedClientChannelBuilder withEstablishmentTimeout(long establishmentTimeout) {
-        this.establishmentTimeout = establishmentTimeout;
+    public EstablishedClientChannelBuilder withEstablishmentTimeout(long establishmentTimeoutInMilliseconds) {
+        this.establishmentTimeout = establishmentTimeoutInMilliseconds;
         return this;
     }
 
@@ -155,7 +157,7 @@ public class EstablishedClientChannelBuilderImpl implements EstablishedClientCha
                     }
                 });
 
-        if (semaphore.tryAcquire(1, this.establishmentTimeout, TimeUnit.SECONDS)) {
+        if (semaphore.tryAcquire(1, this.establishmentTimeout, TimeUnit.MILLISECONDS)) {
 
             if (receivedExceptions[1] != null) {
                 throw new RuntimeException(receivedExceptions[1]);

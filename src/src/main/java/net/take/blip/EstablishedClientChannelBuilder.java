@@ -36,7 +36,7 @@ public interface EstablishedClientChannelBuilder {
 
     EstablishedClientChannelBuilder withAuthentication(Authentication authentication);
 
-    EstablishedClientChannelBuilder withEstablishmentTimeout(long establishmentTimeout);
+    EstablishedClientChannelBuilder withEstablishmentTimeout(long establishmentTimeoutInMilliseconds);
 
     EstablishedClientChannelBuilder addEstablishedHandler(Consumer<ClientChannel> handler);
 
