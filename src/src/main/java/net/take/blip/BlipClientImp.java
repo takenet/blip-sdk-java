@@ -3,28 +3,43 @@ package net.take.blip;
 import org.limeprotocol.Command;
 import org.limeprotocol.Message;
 import org.limeprotocol.Notification;
+import org.limeprotocol.SessionCompression;
 import org.limeprotocol.client.ClientChannel;
-import org.limeprotocol.network.CommandChannel;
-import org.limeprotocol.network.MessageChannel;
-import org.limeprotocol.network.NotificationChannel;
+import org.limeprotocol.network.*;
 
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class BlipClientImp implements BlipClient {
-    private final Consumer<ClientChannel> clientChannelFactory;
+    private final ClientChannelFactory clientChannelFactory;
 
-    public BlipClientImp(Consumer<ClientChannel> clientChannelFactory) {
+    private final Set<CommandChannel.CommandChannelListener> commandListeners;
+    private final Set<MessageChannel.MessageChannelListener> messageListeners;
+    private final Set<NotificationChannel.NotificationChannelListener> notificationListeners;
 
+    public BlipClientImp(ClientChannelFactory clientChannelFactory) {
+
+        if (clientChannelFactory == null) {
+            throw new IllegalArgumentException("The clientChannelFactory cannot be null");
+        }
         this.clientChannelFactory = clientChannelFactory;
+        this.commandListeners = new HashSet<>();
+        this.messageListeners = new HashSet<>();
+        this.notificationListeners = new HashSet<>();
     }
 
     @Override
-    public void start() {
+    public void start() throws IOException {
+        ClientChannel clientChannel = this.clientChannelFactory.create();
+
+        clientChannel.establishSession(SessionCompression.NONE, );
 
     }
 
     @Override
-    public void stop() {
+    public void stop() throws IOException {
 
     }
 
@@ -49,17 +64,20 @@ public class BlipClientImp implements BlipClient {
     }
 
     @Override
-    public void addMessageListener(MessageChannel.MessageChannelListener messageChannelListener) {
-
+    public Sender addMessageListener(MessageChannel.MessageChannelListener messageChannelListener) {
+        this.messageListeners.add(messageChannelListener);
+        return this;
     }
 
     @Override
-    public void addCommandListener(CommandChannel.CommandChannelListener commandChannelListener) {
-
+    public Sender addCommandListener(CommandChannel.CommandChannelListener commandChannelListener) {
+        this.commandListeners.add(commandChannelListener);
+        return this;
     }
 
     @Override
-    public void addNotificationListener(NotificationChannel.NotificationChannelListener notificationChannelListener) {
-
+    public Sender addNotificationListener(NotificationChannel.NotificationChannelListener notificationChannelListener) {
+        this.notificationListeners.add(notificationChannelListener);
+        return this;
     }
 }

@@ -1,7 +1,9 @@
 package net.take.blip;
 
-public interface BlipClient extends Sender {
-    void start();
+import java.io.IOException;
 
-    void stop();
+public interface BlipClient extends Sender {
+    void start() throws IOException;
+
+    void stop() throws IOException;
 }

@@ -34,9 +34,9 @@ public interface Sender {
 
     void sendNotification(Notification notification);
 
-    void addMessageListener(MessageChannel.MessageChannelListener messageChannelListener);
+    Sender addMessageListener(MessageChannel.MessageChannelListener messageChannelListener);
 
-    void addCommandListener(CommandChannel.CommandChannelListener commandChannelListener);
+    Sender addCommandListener(CommandChannel.CommandChannelListener commandChannelListener);
 
-    void addNotificationListener(NotificationChannel.NotificationChannelListener notificationChannelListener);
+    Sender addNotificationListener(NotificationChannel.NotificationChannelListener notificationChannelListener);
 }
