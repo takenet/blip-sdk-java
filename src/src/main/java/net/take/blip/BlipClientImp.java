@@ -34,8 +34,7 @@ public class BlipClientImp implements BlipClient {
     public void start() throws IOException {
         ClientChannel clientChannel = this.clientChannelFactory.create();
 
-        clientChannel.establishSession(SessionCompression.NONE, );
-
+        //clientChannel.establishSession(SessionCompression.NONE, );
     }
 
     @Override
