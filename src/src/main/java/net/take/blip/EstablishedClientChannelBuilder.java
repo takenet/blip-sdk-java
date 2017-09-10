@@ -8,6 +8,7 @@ import org.limeprotocol.security.*;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 
 public interface EstablishedClientChannelBuilder {
 
@@ -36,6 +37,8 @@ public interface EstablishedClientChannelBuilder {
     EstablishedClientChannelBuilder withAuthentication(Authentication authentication);
 
     EstablishedClientChannelBuilder withEstablishmentTimeout(long establishmentTimeout);
+
+    EstablishedClientChannelBuilder addEstablishedHandler(Consumer<ClientChannel> handler);
 
     ClientChannel buildAndEstablish() throws IOException, InterruptedException, TimeoutException;
 

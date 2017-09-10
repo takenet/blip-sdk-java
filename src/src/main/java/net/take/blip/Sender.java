@@ -8,6 +8,7 @@ import org.limeprotocol.network.NotificationChannel;
 
 import java.io.IOException;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 public interface Sender {
     Command processCommand(Command requestCommand);
@@ -34,9 +35,9 @@ public interface Sender {
 
     void sendNotification(Notification notification);
 
-    Sender addMessageListener(MessageChannel.MessageChannelListener messageChannelListener);
+    Sender addMessageListener(MessageChannel.MessageChannelListener messageChannelListener, Predicate<Message> messageFilter);
 
-    Sender addCommandListener(CommandChannel.CommandChannelListener commandChannelListener);
+    Sender addCommandListener(CommandChannel.CommandChannelListener commandChannelListener, Predicate<Command> commandFilter);
 
-    Sender addNotificationListener(NotificationChannel.NotificationChannelListener notificationChannelListener);
+    Sender addNotificationListener(NotificationChannel.NotificationChannelListener notificationChannelListener, Predicate<Notification> commandFilter);
 }

@@ -32,7 +32,7 @@ public interface ClientChannelBuilder {
 
     ClientChannelBuilder addCommandModule(ChannelModule<Command> module);
 
-    ClientChannelBuilder addBuiltHandler(Consumer<ClientChannel> builtHandler);
+    ClientChannelBuilder addBuiltHandler(Consumer<ClientChannel> handler);
 
     ClientChannel build() throws IOException;
 

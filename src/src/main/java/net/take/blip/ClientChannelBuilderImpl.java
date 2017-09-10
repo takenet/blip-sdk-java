@@ -100,9 +100,9 @@ public class ClientChannelBuilderImpl implements ClientChannelBuilder {
     }
 
     @Override
-    public ClientChannelBuilder addBuiltHandler(Consumer<ClientChannel> builtHandler) {
-        Objects.requireNonNull(builtHandler);
-        builtHandlers.add(builtHandler);
+    public ClientChannelBuilder addBuiltHandler(Consumer<ClientChannel> handler) {
+        Objects.requireNonNull(handler);
+        builtHandlers.add(handler);
         return this;
     }
 

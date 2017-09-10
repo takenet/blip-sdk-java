@@ -1,26 +1,28 @@
 package net.take.blip;
 
-import org.limeprotocol.Identity;
-import org.limeprotocol.Session;
-import org.limeprotocol.SessionCompression;
-import org.limeprotocol.SessionEncryption;
+import org.limeprotocol.*;
 import org.limeprotocol.client.ClientChannel;
+import org.limeprotocol.network.LimeException;
 import org.limeprotocol.security.Authentication;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 
 import static java.lang.System.out;
 
 public class EstablishedClientChannelBuilderImpl implements EstablishedClientChannelBuilder {
 
     private final ClientChannelBuilder clientChannelBuilder;
+    private final Set<Consumer<ClientChannel>> establishedHandlers;
     private Identity identity;
     private String instance;
     private SessionCompression sessionCompression;
@@ -31,6 +33,7 @@ public class EstablishedClientChannelBuilderImpl implements EstablishedClientCha
     public EstablishedClientChannelBuilderImpl(ClientChannelBuilder clientChannelBuilder) {
         Objects.requireNonNull(clientChannelBuilder, "clientChannelBuilder cannot be null");
         this.clientChannelBuilder = clientChannelBuilder;
+        this.establishedHandlers = new HashSet<>();
         this.withGuestAuthentication()
             .withIdentity(new Identity(UUID.randomUUID().toString(), clientChannelBuilder.getServerURI().getHost()))
             .withSessionEncryption(SessionEncryption.TLS)
@@ -103,6 +106,12 @@ public class EstablishedClientChannelBuilderImpl implements EstablishedClientCha
     }
 
     @Override
+    public EstablishedClientChannelBuilder addEstablishedHandler(Consumer<ClientChannel> handler) {
+        this.establishedHandlers.add(handler);
+        return this;
+    }
+
+    @Override
     public EstablishedClientChannelBuilder withSessionCompression(SessionCompression sessionCompression) {
         Objects.requireNonNull(sessionCompression);
         this.sessionCompression = sessionCompression;
@@ -122,6 +131,10 @@ public class EstablishedClientChannelBuilderImpl implements EstablishedClientCha
         semaphore.acquire();
 
         ClientChannel clientChannel = clientChannelBuilder.build();
+
+        final Session[] receivedSessions = new Session[1];
+        final Exception[] receivedExceptions = new Exception[1];
+
         clientChannel.establishSession(
                 getSessionCompression(),
                 getSessionEncryption(),
@@ -131,23 +144,42 @@ public class EstablishedClientChannelBuilderImpl implements EstablishedClientCha
                 new ClientChannel.EstablishSessionListener() {
                     @Override
                     public void onFailure(Exception exception) {
-                        exception.printStackTrace();
+                        receivedExceptions[1] = exception;
                         semaphore.release();
                     }
 
                     @Override
                     public void onReceiveSession(Session session) {
+                        receivedSessions[0] = session;
                         semaphore.release();
                     }
                 });
 
         if (semaphore.tryAcquire(1, this.establishmentTimeout, TimeUnit.SECONDS)) {
 
+            if (receivedExceptions[1] != null) {
+                throw new RuntimeException(receivedExceptions[1]);
+            }
+
+            if (clientChannel.getState() != Session.SessionState.ESTABLISHED) {
+                Reason reason = null;
+                if (receivedSessions[1] != null) {
+                    reason = receivedSessions[1].getReason();
+                }
+                if (reason == null) {
+                    reason = new Reason(ReasonCodes.GENERAL_ERROR, "receivedExceptions");
+                }
+                throw new LimeException(reason);
+            }
+
+            for (Consumer<ClientChannel> handler : establishedHandlers) {
+                handler.accept(clientChannel);
+            }
+
+            return clientChannel;
+
         } else {
             throw new TimeoutException("Could not establish the session in the configured timeout");
         }
-
-
-        return null;
     }
 }
