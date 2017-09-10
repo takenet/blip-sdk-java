@@ -3,15 +3,15 @@ package net.take.blip;
 import org.limeprotocol.Command;
 import org.limeprotocol.Message;
 import org.limeprotocol.Notification;
-import org.limeprotocol.SessionCompression;
-import org.limeprotocol.client.ClientChannel;
-import org.limeprotocol.network.*;
+import org.limeprotocol.network.CommandChannel;
+import org.limeprotocol.network.MessageChannel;
+import org.limeprotocol.network.NotificationChannel;
 
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 public class BlipClientImp implements BlipClient {
     private final OnDemandClientChannel onDemandClientChannel;
@@ -61,20 +61,17 @@ public class BlipClientImp implements BlipClient {
     }
 
     @Override
-    public Sender addMessageListener(MessageChannel.MessageChannelListener messageChannelListener) {
-        this.messageListeners.add(messageChannelListener);
-        return this;
+    public Sender addMessageListener(MessageChannel.MessageChannelListener messageChannelListener, Predicate<Message> messageFilter) {
+        return null;
     }
 
     @Override
-    public Sender addCommandListener(CommandChannel.CommandChannelListener commandChannelListener) {
-        this.commandListeners.add(commandChannelListener);
-        return this;
+    public Sender addCommandListener(CommandChannel.CommandChannelListener commandChannelListener, Predicate<Command> commandFilter) {
+        return null;
     }
 
     @Override
-    public Sender addNotificationListener(NotificationChannel.NotificationChannelListener notificationChannelListener) {
-        this.notificationListeners.add(notificationChannelListener);
-        return this;
+    public Sender addNotificationListener(NotificationChannel.NotificationChannelListener notificationChannelListener, Predicate<Notification> commandFilter) {
+        return null;
     }
 }

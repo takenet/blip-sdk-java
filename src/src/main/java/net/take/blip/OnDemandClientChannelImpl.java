@@ -32,10 +32,10 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
     private final Set<NotificationChannelListener> notificationChannelListeners;
     private final Set<CommandChannelListener> commandChannelListeners;
     private final SessionChannel.SessionChannelListener finishedSessionChannelListener;
-    private final Semaphore finishedSessionChannelListenerSemaphore;
     private final Session[] finishedSessionChannelListenerSessions;
     private final Exception[] finishedSessionChannelListenerExceptions;
 
+    private Semaphore finishedSessionChannelListenerSemaphore;
     private ClientChannel clientChannel;
 
     public OnDemandClientChannelImpl(EstablishedClientChannelBuilder establishedClientChannelBuilder) {
@@ -54,7 +54,6 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
         this.messageChannelListeners = new HashSet<>();
         this.notificationChannelListeners = new HashSet<>();
         this.commandChannelListeners = new HashSet<>();
-        this.finishedSessionChannelListenerSemaphore = new Semaphore(0);
         this.finishedSessionChannelListenerSessions = new Session[1];
         this.finishedSessionChannelListenerExceptions = new Exception[1];
         this.finishedSessionChannelListener = new ClientChannel.EstablishSessionListener() {
@@ -63,7 +62,6 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
                 finishedSessionChannelListenerExceptions[0] = exception;
                 finishedSessionChannelListenerSemaphore.release();
             }
-
 
             @Override
             public void onReceiveSession(Session session) {
@@ -90,7 +88,8 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
             if (isEstablished()) {
                 clientChannel.sendFinishingSession();
 
-                if (!finishedSessionChannelListenerSemaphore.tryAcquire(timeoutInMilliseconds, TimeUnit.MILLISECONDS)) {
+                if (finishedSessionChannelListenerSemaphore != null
+                        && !finishedSessionChannelListenerSemaphore.tryAcquire(timeoutInMilliseconds, TimeUnit.MILLISECONDS)) {
                     throw new TimeoutException("Could not finish the active session in the configured timeout");
                 }
             }
@@ -98,7 +97,6 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
         } finally {
             semaphore.release();
         }
-
     }
 
     @Override
@@ -196,6 +194,7 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
                 clientChannel = this.clientChannel;
                 if (shouldCreateChannel(clientChannel)) {
                     this.clientChannel = clientChannel = this.establishedClientChannelBuilder.buildAndEstablish();
+                    this.finishedSessionChannelListenerSemaphore = new Semaphore(0);
                     clientChannel.enqueueSessionListener(finishedSessionChannelListener);
                     for (MessageChannelListener listener : messageChannelListeners) {
                         clientChannel.addMessageListener(listener, false);
