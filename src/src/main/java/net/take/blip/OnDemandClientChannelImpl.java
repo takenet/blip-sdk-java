@@ -7,6 +7,7 @@ import org.limeprotocol.Session;
 import org.limeprotocol.client.ClientChannel;
 import org.limeprotocol.network.Channel;
 import org.limeprotocol.network.SessionChannel;
+import org.limeprotocol.network.Transport;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -31,12 +32,11 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
     private final Set<MessageChannelListener> messageChannelListeners;
     private final Set<NotificationChannelListener> notificationChannelListeners;
     private final Set<CommandChannelListener> commandChannelListeners;
-    private final SessionChannel.SessionChannelListener finishedSessionChannelListener;
-    private final Session[] finishedSessionChannelListenerSessions;
-    private final Exception[] finishedSessionChannelListenerExceptions;
+    private final ChannelStateMonitor channelStateMonitor;
 
     private Semaphore finishedSessionChannelListenerSemaphore;
     private ClientChannel clientChannel;
+    private boolean isFinishing;
 
     public OnDemandClientChannelImpl(EstablishedClientChannelBuilder establishedClientChannelBuilder) {
         this(establishedClientChannelBuilder, 30000);
@@ -54,21 +54,7 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
         this.messageChannelListeners = new HashSet<>();
         this.notificationChannelListeners = new HashSet<>();
         this.commandChannelListeners = new HashSet<>();
-        this.finishedSessionChannelListenerSessions = new Session[1];
-        this.finishedSessionChannelListenerExceptions = new Exception[1];
-        this.finishedSessionChannelListener = new ClientChannel.EstablishSessionListener() {
-            @Override
-            public void onFailure(Exception exception) {
-                finishedSessionChannelListenerExceptions[0] = exception;
-                finishedSessionChannelListenerSemaphore.release();
-            }
-
-            @Override
-            public void onReceiveSession(Session session) {
-                finishedSessionChannelListenerSessions[0] = session;
-                finishedSessionChannelListenerSemaphore.release();
-            }
-        };
+        this.channelStateMonitor = new ChannelStateMonitor();
     }
 
     @Override
@@ -78,12 +64,14 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
 
     @Override
     public void establish(long timeoutInMilliseconds) throws IOException, InterruptedException, TimeoutException {
+        isFinishing = false;
         getChannel("establish", timeoutInMilliseconds);
     }
 
     @Override
     public void finish(long timeoutInMilliseconds) throws IOException, InterruptedException, TimeoutException {
         semaphore.acquire();
+        isFinishing = true;
         try {
             if (isEstablished()) {
                 clientChannel.sendFinishingSession();
@@ -195,7 +183,12 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
                 if (shouldCreateChannel(clientChannel)) {
                     this.clientChannel = clientChannel = this.establishedClientChannelBuilder.buildAndEstablish();
                     this.finishedSessionChannelListenerSemaphore = new Semaphore(0);
-                    clientChannel.enqueueSessionListener(finishedSessionChannelListener);
+
+                    // Add listeners to monitor the channel state
+                    clientChannel.getTransport().setStateListener(channelStateMonitor);
+                    clientChannel.enqueueSessionListener(channelStateMonitor);
+
+                    // Register the external listeners
                     for (MessageChannelListener listener : messageChannelListeners) {
                         clientChannel.addMessageListener(listener, false);
                     }
@@ -272,6 +265,57 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
     private static void throwIfAny(Set<Exception> exceptions) {
         if (!exceptions.isEmpty()) {
             throw new RuntimeException(exceptions.iterator().next());
+        }
+    }
+
+    private final class ChannelStateMonitor implements ClientChannel.EstablishSessionListener, Transport.TransportStateListener {
+        /**
+         * Occurs when the session establishment fails.
+         *
+         * @param exception
+         */
+        @Override
+        public void onFailure(Exception exception) {
+            if (finishedSessionChannelListenerSemaphore != null) {
+                finishedSessionChannelListenerSemaphore.release();
+            }
+        }
+
+        /**
+         * Occurs when a session envelope is received (usually when the session state is finished or failed).
+         *
+         * @param session
+         */
+        @Override
+        public void onReceiveSession(Session session) {
+            if (finishedSessionChannelListenerSemaphore != null) {
+                finishedSessionChannelListenerSemaphore.release();
+            }
+        }
+
+        @Override
+        public void onClosing() {
+
+        }
+
+        /**
+         * Occurs when the transport is closed.
+         */
+        @Override
+        public void onClosed() {
+            if (!isFinishing) {
+                // TODO: Recreate the channel
+            }
+        }
+
+        /**
+         * Occurs when the transport listener thread throws an exception.
+         *
+         * @param e
+         */
+        @Override
+        public void onException(Exception e) {
+
         }
     }
 }

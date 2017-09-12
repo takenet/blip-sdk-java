@@ -3,6 +3,7 @@ package net.take.blip;
 import org.limeprotocol.Command;
 import org.limeprotocol.Message;
 import org.limeprotocol.Notification;
+import org.limeprotocol.messaging.Registrator;
 import org.limeprotocol.network.CommandChannel;
 import org.limeprotocol.network.MessageChannel;
 import org.limeprotocol.network.NotificationChannel;
@@ -19,6 +20,10 @@ public class BlipClientImp implements BlipClient {
     private final Set<CommandChannel.CommandChannelListener> commandListeners;
     private final Set<MessageChannel.MessageChannelListener> messageListeners;
     private final Set<NotificationChannel.NotificationChannelListener> notificationListeners;
+
+    static {
+        Registrator.registerDocuments();
+    }
 
     public BlipClientImp(OnDemandClientChannel onDemandClientChannel) {
         Objects.requireNonNull(onDemandClientChannel, "The onDemandClientChannel cannot be null");
