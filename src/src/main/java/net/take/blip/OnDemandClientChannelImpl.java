@@ -1,9 +1,6 @@
 package net.take.blip;
 
-import org.limeprotocol.Command;
-import org.limeprotocol.Message;
-import org.limeprotocol.Notification;
-import org.limeprotocol.Session;
+import org.limeprotocol.*;
 import org.limeprotocol.client.ClientChannel;
 import org.limeprotocol.network.Channel;
 import org.limeprotocol.network.SessionChannel;
@@ -80,6 +77,8 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
                         && !finishedSessionChannelListenerSemaphore.tryAcquire(timeoutInMilliseconds, TimeUnit.MILLISECONDS)) {
                     throw new TimeoutException("Could not finish the active session in the configured timeout");
                 }
+
+                clientChannel = null;
             }
 
         } finally {
@@ -109,7 +108,7 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
 
     @Override
     public void sendCommand(Command command) throws IOException {
-
+        sendAsync(channel -> channel.sendCommand(command));
     }
 
     @Override
@@ -127,7 +126,7 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
 
     @Override
     public void sendMessage(Message message) throws IOException {
-
+        sendAsync(channel -> channel.sendMessage(message));
     }
 
     @Override
@@ -145,7 +144,7 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
 
     @Override
     public void sendNotification(Notification notification) throws IOException {
-
+        sendAsync(channel -> channel.sendNotification(notification));
     }
 
     @Override
@@ -161,7 +160,7 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
         notificationChannelListeners.remove(listener);
     }
 
-    private ClientChannel getChannel(String operationName, long timeoutInMilliseconds) {
+    private ClientChannel getChannel(String operationName, long timeoutInMilliseconds) throws TimeoutException {
         boolean channelCreated = false;
         ClientChannel clientChannel = this.clientChannel;
 
@@ -172,7 +171,7 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
                 if (timeoutInMilliseconds > 0) {
                     if (System.currentTimeMillis() - startTime >= timeoutInMilliseconds ||
                             !this.semaphore.tryAcquire(1, timeoutInMilliseconds, TimeUnit.MILLISECONDS)) {
-                        throw new RuntimeException("The channel creation operation has timed out");
+                        throw new TimeoutException("The channel creation operation has timed out");
                     }
                 } else {
                     this.semaphore.acquire();
@@ -269,6 +268,25 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
         if (!exceptions.isEmpty()) {
             throw new RuntimeException(exceptions.iterator().next());
         }
+    }
+
+    private void sendAsync(ClientChannelAction action) {
+        while (!isFinishing) {
+            try {
+                ClientChannel channel = getChannel("sendCommand", defaultTimeoutInMilliseconds);
+                action.execute(channel);
+                return;
+            } catch (TimeoutException e) {
+                throw new RuntimeException(e);
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    interface ClientChannelAction {
+        void execute(ClientChannel channel) throws IOException;
     }
 
     private final class ChannelStateMonitor implements ClientChannel.EstablishSessionListener, Transport.TransportStateListener {

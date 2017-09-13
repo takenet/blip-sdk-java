@@ -29,15 +29,25 @@ public interface Sender {
         sendMessage(message);
     }
 
-    void sendMessage(Message message);
+    void sendMessage(Message message) throws IOException;
 
-    void sendCommand(Command command);
+    void sendCommand(Command command) throws IOException;
 
-    void sendNotification(Notification notification);
+    void sendNotification(Notification notification) throws IOException;
 
-    Sender addMessageListener(MessageChannel.MessageChannelListener messageChannelListener, Predicate<Message> messageFilter);
+    Sender addMessageListener(MessageListener messageListener, Predicate<Message> messageFilter);
 
-    Sender addCommandListener(CommandChannel.CommandChannelListener commandChannelListener, Predicate<Command> commandFilter);
+    Sender addCommandListener(CommandListener commandListener, Predicate<Command> commandFilter);
 
-    Sender addNotificationListener(NotificationChannel.NotificationChannelListener notificationChannelListener, Predicate<Notification> commandFilter);
+    Sender addNotificationListener(NotificationListener notificationListener, Predicate<Notification> commandFilter);
+
+    interface EnvelopeListener<T extends Envelope> {
+        void onReceive(T envelope);
+    }
+
+    interface MessageListener extends EnvelopeListener<Message> { }
+
+    interface CommandListener extends EnvelopeListener<Command> { }
+
+    interface NotificationListener extends EnvelopeListener<Notification> { }
 }

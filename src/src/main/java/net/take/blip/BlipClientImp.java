@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 
 public class BlipClientImp implements BlipClient {
@@ -35,14 +36,13 @@ public class BlipClientImp implements BlipClient {
     }
 
     @Override
-    public void start() throws IOException {
-        //ClientChannel clientChannel = this.clientChannelFactory.create();
-        //clientChannel.establishSession(SessionCompression.NONE, );
+    public void start() throws IOException, TimeoutException, InterruptedException {
+        this.onDemandClientChannel.establish();
     }
 
     @Override
-    public void stop() throws IOException {
-
+    public void stop() throws IOException, TimeoutException, InterruptedException {
+        this.onDemandClientChannel.finish();
     }
 
     @Override
@@ -51,32 +51,53 @@ public class BlipClientImp implements BlipClient {
     }
 
     @Override
-    public void sendMessage(Message message) {
-
+    public void sendMessage(Message message) throws IOException {
+        this.onDemandClientChannel.sendMessage(message);
     }
 
     @Override
-    public void sendCommand(Command command) {
-
+    public void sendCommand(Command command) throws IOException {
+        this.onDemandClientChannel.sendCommand(command);
     }
 
     @Override
-    public void sendNotification(Notification notification) {
-
+    public void sendNotification(Notification notification) throws IOException {
+        this.onDemandClientChannel.sendNotification(notification);
     }
 
     @Override
-    public Sender addMessageListener(MessageChannel.MessageChannelListener messageChannelListener, Predicate<Message> messageFilter) {
-        return null;
+    public Sender addMessageListener(MessageListener messageListener, Predicate<Message> messageFilter) {
+        Objects.requireNonNull(messageListener);
+        this.onDemandClientChannel.addMessageListener(message -> {
+            if (messageFilter == null || messageFilter.test(message)) {
+                messageListener.onReceive(message);
+            }
+        },false);
+
+        return this;
     }
 
     @Override
-    public Sender addCommandListener(CommandChannel.CommandChannelListener commandChannelListener, Predicate<Command> commandFilter) {
-        return null;
+    public Sender addCommandListener(CommandListener commandListener, Predicate<Command> commandFilter) {
+        Objects.requireNonNull(commandListener);
+        this.onDemandClientChannel.addCommandListener(command -> {
+            if (commandFilter == null || commandFilter.test(command)) {
+                commandListener.onReceive(command);
+            }
+        },false);
+
+        return this;
     }
 
     @Override
-    public Sender addNotificationListener(NotificationChannel.NotificationChannelListener notificationChannelListener, Predicate<Notification> commandFilter) {
-        return null;
+    public Sender addNotificationListener(NotificationListener notificationListener, Predicate<Notification> notificationFilter) {
+        Objects.requireNonNull(notificationListener);
+        this.onDemandClientChannel.addNotificationListener(notification -> {
+            if (notificationFilter == null || notificationFilter.test(notification)) {
+                notificationListener.onReceive(notification);
+            }
+        },false);
+
+        return this;
     }
 }
