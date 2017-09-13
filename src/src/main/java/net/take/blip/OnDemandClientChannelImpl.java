@@ -167,13 +167,17 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
 
         long startTime = System.currentTimeMillis();
 
-        while (shouldCreateChannel(clientChannel)) {
-
+        while (!isFinishing && shouldCreateChannel(clientChannel)) {
             try {
-                if (System.currentTimeMillis() - startTime >= timeoutInMilliseconds ||
-                        !this.semaphore.tryAcquire(1, timeoutInMilliseconds, TimeUnit.MILLISECONDS)) {
-                    throw new RuntimeException("The channel creation operation has timed out");
+                if (timeoutInMilliseconds > 0) {
+                    if (System.currentTimeMillis() - startTime >= timeoutInMilliseconds ||
+                            !this.semaphore.tryAcquire(1, timeoutInMilliseconds, TimeUnit.MILLISECONDS)) {
+                        throw new RuntimeException("The channel creation operation has timed out");
+                    }
+                } else {
+                    this.semaphore.acquire();
                 }
+
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -200,7 +204,6 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
                     }
 
                     channelCreated = true;
-                    break;
                 }
             } catch (Exception e) {
                 FailedChannelInformation failedChannelInformation = new FailedChannelInformation(
@@ -303,19 +306,32 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
          */
         @Override
         public void onClosed() {
-            if (!isFinishing) {
-                // TODO: Recreate the channel
+            while (!isFinishing) {
+                try {
+                    // Try recreate the channel
+                    establish();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
 
         /**
          * Occurs when the transport listener thread throws an exception.
          *
-         * @param e
+         * @param exception
          */
         @Override
-        public void onException(Exception e) {
-
+        public void onException(Exception exception) {
+            exception.printStackTrace();
+            while (!isFinishing) {
+                try {
+                    // Try recreate the channel
+                    establish();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 }
