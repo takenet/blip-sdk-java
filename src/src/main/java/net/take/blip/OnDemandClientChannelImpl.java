@@ -3,11 +3,9 @@ package net.take.blip;
 import org.limeprotocol.*;
 import org.limeprotocol.client.ClientChannel;
 import org.limeprotocol.network.Channel;
-import org.limeprotocol.network.SessionChannel;
 import org.limeprotocol.network.Transport;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Objects;
@@ -20,7 +18,8 @@ import java.util.function.Consumer;
 public class OnDemandClientChannelImpl implements OnDemandClientChannel {
 
     private final EstablishedClientChannelBuilder establishedClientChannelBuilder;
-    private final long defaultTimeoutInMilliseconds;
+    private final long defaultTimeout;
+    private final TimeUnit defaultTimeoutTimeUnit;
     private final Semaphore semaphore;
     private final Set<Consumer<ChannelInformation>> channelCreatedHandlers;
     private final Set<Consumer<ChannelInformation>> channelDiscardedHandlers;
@@ -36,11 +35,12 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
     private boolean isFinishing;
 
     public OnDemandClientChannelImpl(EstablishedClientChannelBuilder establishedClientChannelBuilder) {
-        this(establishedClientChannelBuilder, 30000);
+        this(establishedClientChannelBuilder, 30000, TimeUnit.MILLISECONDS);
     }
 
-    public OnDemandClientChannelImpl(EstablishedClientChannelBuilder establishedClientChannelBuilder, long defaultTimeoutInMilliseconds) {
-        this.defaultTimeoutInMilliseconds = defaultTimeoutInMilliseconds;
+    public OnDemandClientChannelImpl(EstablishedClientChannelBuilder establishedClientChannelBuilder, long defaultTimeout, TimeUnit defaultTimeoutTimeUnit) {
+        this.defaultTimeout = defaultTimeout;
+        this.defaultTimeoutTimeUnit = defaultTimeoutTimeUnit;
         Objects.requireNonNull(establishedClientChannelBuilder, "establishedClientChannelBuilder cannot be null");
         this.establishedClientChannelBuilder = establishedClientChannelBuilder;
         this.semaphore = new Semaphore(1);
@@ -60,13 +60,13 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
     }
 
     @Override
-    public void establish(long timeoutInMilliseconds) throws IOException, InterruptedException, TimeoutException {
+    public void establish(long timeout, TimeUnit timeoutTimeUnit) throws IOException, InterruptedException, TimeoutException {
         isFinishing = false;
-        getChannel("establish", timeoutInMilliseconds);
+        getChannel("establish", timeout, timeoutTimeUnit);
     }
 
     @Override
-    public void finish(long timeoutInMilliseconds) throws IOException, InterruptedException, TimeoutException {
+    public void finish(long timeout, TimeUnit timeoutTimeUnit) throws IOException, InterruptedException, TimeoutException {
         semaphore.acquire();
         isFinishing = true;
         try {
@@ -74,7 +74,7 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
                 clientChannel.sendFinishingSession();
 
                 if (finishedSessionChannelListenerSemaphore != null
-                        && !finishedSessionChannelListenerSemaphore.tryAcquire(timeoutInMilliseconds, TimeUnit.MILLISECONDS)) {
+                        && !finishedSessionChannelListenerSemaphore.tryAcquire(timeout, timeoutTimeUnit)) {
                     throw new TimeoutException("Could not finish the active session in the configured timeout");
                 }
 
@@ -125,6 +125,28 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
     }
 
     @Override
+    public Command processCommand(Command requestCommand, long timeout, TimeUnit timeoutTimeUnit) throws IOException, TimeoutException, InterruptedException {
+        Objects.requireNonNull(requestCommand);
+
+        long timeoutMilliseconds = TimeUnit.MILLISECONDS.convert(timeout, timeoutTimeUnit);
+        long startTime = System.currentTimeMillis();
+
+        while (!isFinishing) {
+            try {
+                ClientChannel channel = getChannel("processCommand", timeoutMilliseconds - (System.currentTimeMillis() - startTime), TimeUnit.MILLISECONDS);
+                return channel.processCommand(requestCommand, timeout, timeoutTimeUnit);
+            } catch (TimeoutException | InterruptedException e) {
+                throw new TimeoutException("Could not process the command in the specified timeout");
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        throw new IllegalStateException("The channel is in finishing state");
+    }
+
+    @Override
     public void sendMessage(Message message) throws IOException {
         sendAsync(channel -> channel.sendMessage(message));
     }
@@ -160,30 +182,50 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
         notificationChannelListeners.remove(listener);
     }
 
-    private ClientChannel getChannel(String operationName, long timeoutInMilliseconds) throws TimeoutException {
+    private ClientChannel getChannel(String operationName, long timeout, TimeUnit timeoutTimeUnit) throws TimeoutException {
         boolean channelCreated = false;
         ClientChannel clientChannel = this.clientChannel;
-
         long startTime = System.currentTimeMillis();
 
+        // Check again if the current channel is valid
         while (!isFinishing && shouldCreateChannel(clientChannel)) {
-            try {
-                if (timeoutInMilliseconds > 0) {
-                    if (System.currentTimeMillis() - startTime >= timeoutInMilliseconds ||
-                            !this.semaphore.tryAcquire(1, timeoutInMilliseconds, TimeUnit.MILLISECONDS)) {
-                        throw new TimeoutException("The channel creation operation has timed out");
-                    }
-                } else {
-                    this.semaphore.acquire();
-                }
+            // If no timeout was provided, we will use the default timeout
+            long semaphoreTimeout;
+            TimeUnit semaphoreTimeoutTimeUnit;
 
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+            if (timeout <= 0) {
+                semaphoreTimeout = defaultTimeout;
+                semaphoreTimeoutTimeUnit = defaultTimeoutTimeUnit;
+            } else {
+                semaphoreTimeout = TimeUnit.MILLISECONDS.convert(timeout, timeoutTimeUnit) - (System.currentTimeMillis() - startTime);
+                semaphoreTimeoutTimeUnit = TimeUnit.MILLISECONDS;
+
+                if (semaphoreTimeout <= 0) {
+                    throw new TimeoutException("The channel creation operation has timed out");
+                }
             }
 
+            // Try to acquire the semaphore to start the operation
+            while (!isFinishing) {
+                try {
+                    if (this.semaphore.tryAcquire(1, semaphoreTimeout, semaphoreTimeoutTimeUnit)) {
+                        break;
+                    }
+                } catch (InterruptedException e) {
+                    // Always retry if no timeout
+                    if (timeout > 0) {
+                        throw new TimeoutException("The channel creation operation has timed out");
+                    }
+                }
+            }
+            if (isFinishing) break;
+
             try {
+                // Check again if the current channel is valid
                 clientChannel = this.clientChannel;
                 if (shouldCreateChannel(clientChannel)) {
+
+                    // Attempts to recreate the channel
                     this.clientChannel = clientChannel = this.establishedClientChannelBuilder.buildAndEstablish();
                     this.finishedSessionChannelListenerSemaphore = new Semaphore(0);
 
@@ -213,6 +255,10 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
             } finally {
                 this.semaphore.release();
             }
+        }
+
+        if (isFinishing) {
+            throw new IllegalStateException("The channel is in finishing state");
         }
 
         if (channelCreated && clientChannel != null) {
@@ -273,7 +319,7 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
     private void sendAsync(ClientChannelAction action) {
         while (!isFinishing) {
             try {
-                ClientChannel channel = getChannel("sendCommand", defaultTimeoutInMilliseconds);
+                ClientChannel channel = getChannel("sendCommand", defaultTimeout, defaultTimeoutTimeUnit);
                 action.execute(channel);
                 return;
             } catch (TimeoutException e) {
