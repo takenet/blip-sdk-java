@@ -4,6 +4,8 @@
     <bytecodeTargetLevel>
       <module name="blip-sdk_main" target="1.8" />
       <module name="blip-sdk_test" target="1.8" />
+      <module name="samples_main" target="1.8" />
+      <module name="samples_test" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>
