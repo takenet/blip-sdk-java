@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 
-public class BlipClientImp implements BlipClient {
+public class BlipClientImpl implements BlipClient {
     private final OnDemandClientChannel onDemandClientChannel;
 
     private final Set<CommandChannel.CommandChannelListener> commandListeners;
@@ -26,7 +26,7 @@ public class BlipClientImp implements BlipClient {
         Registrator.registerDocuments();
     }
 
-    public BlipClientImp(OnDemandClientChannel onDemandClientChannel) {
+    public BlipClientImpl(OnDemandClientChannel onDemandClientChannel) {
         Objects.requireNonNull(onDemandClientChannel, "The onDemandClientChannel cannot be null");
 
         this.onDemandClientChannel = onDemandClientChannel;
