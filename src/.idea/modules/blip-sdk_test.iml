@@ -10,9 +10,9 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="blip-sdk_main" />
-    <orderEntry type="library" name="Gradle: org.limeprotocol:lime-java-core:1.1.32" level="project" />
-    <orderEntry type="library" name="Gradle: org.limeprotocol:lime-java-messaging:1.1.32" level="project" />
-    <orderEntry type="library" name="Gradle: org.limeprotocol:lime-java-tcp:1.1.32" level="project" />
+    <orderEntry type="library" name="Gradle: org.limeprotocol:lime-java-core:1.1.35" level="project" />
+    <orderEntry type="library" name="Gradle: org.limeprotocol:lime-java-messaging:1.1.35" level="project" />
+    <orderEntry type="library" name="Gradle: org.limeprotocol:lime-java-tcp:1.1.35" level="project" />
     <orderEntry type="library" name="Gradle: junit:junit:4.12" level="project" />
     <orderEntry type="library" name="Gradle: com.bluecatcode.mockito:mockito-1.10.19-extended:1.1.0" level="project" />
     <orderEntry type="library" name="Gradle: com.fasterxml.jackson.core:jackson-databind:2.5.0" level="project" />

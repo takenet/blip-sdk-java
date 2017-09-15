@@ -146,7 +146,7 @@ public class EstablishedClientChannelBuilderImpl implements EstablishedClientCha
                 new ClientChannel.EstablishSessionListener() {
                     @Override
                     public void onFailure(Exception exception) {
-                        receivedExceptions[1] = exception;
+                        receivedExceptions[0] = exception;
                         semaphore.release();
                     }
 
@@ -159,14 +159,14 @@ public class EstablishedClientChannelBuilderImpl implements EstablishedClientCha
 
         if (semaphore.tryAcquire(1, this.establishmentTimeout, TimeUnit.MILLISECONDS)) {
 
-            if (receivedExceptions[1] != null) {
-                throw new RuntimeException(receivedExceptions[1]);
+            if (receivedExceptions[0] != null) {
+                throw new RuntimeException(receivedExceptions[0]);
             }
 
             if (clientChannel.getState() != Session.SessionState.ESTABLISHED) {
                 Reason reason = null;
-                if (receivedSessions[1] != null) {
-                    reason = receivedSessions[1].getReason();
+                if (receivedSessions[0] != null) {
+                    reason = receivedSessions[0].getReason();
                 }
                 if (reason == null) {
                     reason = new Reason(ReasonCodes.GENERAL_ERROR, "receivedExceptions");

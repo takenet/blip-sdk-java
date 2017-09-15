@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: org.limeprotocol:lime-java-core:1.1.35">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.limeprotocol/lime-java-core/1.1.35/b0dc08628d4c2b627307628c113fdb99018ed388/lime-java-core-1.1.35.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.limeprotocol/lime-java-core/1.1.35/1ba4d024a1fb3d8e82e636bea5a0a44d542e4cb9/lime-java-core-1.1.35-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

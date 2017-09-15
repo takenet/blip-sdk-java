@@ -217,13 +217,12 @@ public final class BlipClientBuilder {
 
             if (getAuthentication() instanceof GuestAuthentication) return;
 
-            ChannelExtensions.setResource(
-                    clientChannel,
+            clientChannel.setResource(
                     new LimeUri(UriTemplates.PRESENCE),
                     new Presence() {{
                         setStatus(PresenceStatus.AVAILABLE);
                         setRoutingRule(routingRule);
-                        //setRoundRobin(roundRobin);
+                        setRoundRobin(roundRobin);
                     }});
 
         } catch (IOException | TimeoutException | InterruptedException e) {
@@ -236,8 +235,7 @@ public final class BlipClientBuilder {
 
             if (getAuthentication() instanceof GuestAuthentication) return;
 
-            ChannelExtensions.setResource(
-                    clientChannel,
+            clientChannel.setResource(
                     new LimeUri(UriTemplates.RECEIPT),
                     new Receipt() {{
                         setEvents(receiptEvents);
