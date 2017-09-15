@@ -1,6 +1,7 @@
 package net.take.blip;
 
 import org.limeprotocol.Command;
+import org.limeprotocol.Envelope;
 import org.limeprotocol.Message;
 import org.limeprotocol.Notification;
 import org.limeprotocol.client.ClientChannel;
@@ -26,14 +27,17 @@ public interface ClientChannelBuilder {
 
     ClientChannelBuilder withAutoNotifyReceipt(boolean autoNotifyReceipt);
 
-    ClientChannelBuilder addMessageModule(ChannelModule<Message> module);
+    ClientChannelBuilder addMessageModule(ChannelModuleFactory<Message> moduleFactory);
 
-    ClientChannelBuilder addNotificationModule(ChannelModule<Notification> module);
+    ClientChannelBuilder addNotificationModule(ChannelModuleFactory<Notification> moduleFactory);
 
-    ClientChannelBuilder addCommandModule(ChannelModule<Command> module);
+    ClientChannelBuilder addCommandModule(ChannelModuleFactory<Command> moduleFactory);
 
     ClientChannelBuilder addBuiltHandler(Consumer<ClientChannel> handler);
 
     ClientChannel build() throws IOException;
 
+    interface ChannelModuleFactory<T extends Envelope> {
+        ChannelModule<T> create(ClientChannel clientChannel);
+    }
 }

@@ -22,12 +22,12 @@ public class ClientChannelBuilderImpl implements ClientChannelBuilder {
     private boolean fillEnvelopeRecipients;
     private boolean autoReplyPings;
     private boolean autoNotifyReceipt;
-    private final Set<ChannelModule<Message>> messageModules;
-    private final Set<ChannelModule<Notification>> notificationModules;
-    private final Set<ChannelModule<Command>> commandModules;
+    private final Set<ChannelModuleFactory<Message>> messageModules;
+    private final Set<ChannelModuleFactory<Notification>> notificationModules;
+    private final Set<ChannelModuleFactory<Command>> commandModules;
     private final Set<Consumer<ClientChannel>> builtHandlers;
 
-    public ClientChannelBuilderImpl(TransportFactory transportFactory, URI serverURI) {
+    private ClientChannelBuilderImpl(TransportFactory transportFactory, URI serverURI) {
         Objects.requireNonNull(transportFactory, "transportFactory cannot be null");
         Objects.requireNonNull(serverURI, "serverURI cannot be null");
 
@@ -79,23 +79,23 @@ public class ClientChannelBuilderImpl implements ClientChannelBuilder {
     }
 
     @Override
-    public ClientChannelBuilder addMessageModule(ChannelModule<Message> module) {
-        Objects.requireNonNull(module);
-        messageModules.add(module);
+    public ClientChannelBuilder addMessageModule(ChannelModuleFactory<Message> moduleFactory) {
+        Objects.requireNonNull(moduleFactory);
+        messageModules.add(moduleFactory);
         return this;
     }
 
     @Override
-    public ClientChannelBuilder addNotificationModule(ChannelModule<Notification> module) {
-        Objects.requireNonNull(module);
-        notificationModules.add(module);
+    public ClientChannelBuilder addNotificationModule(ChannelModuleFactory<Notification> moduleFactory) {
+        Objects.requireNonNull(moduleFactory);
+        notificationModules.add(moduleFactory);
         return this;
     }
 
     @Override
-    public ClientChannelBuilder addCommandModule(ChannelModule<Command> module) {
-        Objects.requireNonNull(module);
-        commandModules.add(module);
+    public ClientChannelBuilder addCommandModule(ChannelModuleFactory<Command> moduleFactory) {
+        Objects.requireNonNull(moduleFactory);
+        commandModules.add(moduleFactory);
         return this;
     }
 
@@ -116,16 +116,16 @@ public class ClientChannelBuilderImpl implements ClientChannelBuilder {
         try {
             ClientChannel clientChannel = new ClientChannelImpl(transport, getFillEnvelopeRecipients(), getAutoReplyPings(), getAutoNotifyReceipt());
 
-            for (ChannelModule<Message> module : this.messageModules) {
-                clientChannel.getMessageModules().add(module);
+            for (ChannelModuleFactory<Message> moduleFactory : this.messageModules) {
+                clientChannel.getMessageModules().add(moduleFactory.create(clientChannel));
             }
 
-            for (ChannelModule<Notification> module : this.notificationModules) {
-                clientChannel.getNotificationModules().add(module);
+            for (ChannelModuleFactory<Notification> moduleFactory : this.notificationModules) {
+                clientChannel.getNotificationModules().add(moduleFactory.create(clientChannel));
             }
 
-            for (ChannelModule<Command> module : this.commandModules) {
-                clientChannel.getCommandModules().add(module);
+            for (ChannelModuleFactory<Command> moduleFactory : this.commandModules) {
+                clientChannel.getCommandModules().add(moduleFactory.create(clientChannel));
             }
 
             for (Consumer<ClientChannel> builtHandler : this.builtHandlers) {
@@ -137,6 +137,10 @@ public class ClientChannelBuilderImpl implements ClientChannelBuilder {
             transport.close();
             throw e;
         }
+    }
+
+    public static ClientChannelBuilder create(TransportFactory transportFactory, URI serverURI) {
+        return new ClientChannelBuilderImpl(transportFactory, serverURI);
     }
 
     interface TransportFactory {
