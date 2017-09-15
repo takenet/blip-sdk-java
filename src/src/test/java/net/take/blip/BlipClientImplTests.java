@@ -2,12 +2,14 @@ package net.take.blip;
 
 import org.junit.Test;
 
-import static org.mockito.Mockito.mock;
+import java.io.IOException;
+import java.util.concurrent.TimeoutException;
+
+import static org.mockito.Mockito.*;
 
 public class BlipClientImplTests {
 
     private OnDemandClientChannel onDemandClientChannel;
-
 
     private BlipClientImpl getTarget() {
         this.onDemandClientChannel = mock(OnDemandClientChannel.class);
@@ -15,7 +17,14 @@ public class BlipClientImplTests {
     }
 
     @Test
-    public void start_nonStarted_callsEstablish() {
+    public void start_notStarted_callsEstablish() throws InterruptedException, TimeoutException, IOException {
+        // Arrange
+        BlipClientImpl target = getTarget();
 
+        // Act
+        target.start();
+
+        // Assert
+        verify(onDemandClientChannel, times(1)).establish();
     }
 }
