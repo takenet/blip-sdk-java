@@ -124,6 +124,4 @@ public class BlipClientImpl implements BlipClient {
             }
         });
     }
-
-
 }
