@@ -193,6 +193,7 @@ public final class BlipClientBuilder {
     public BlipClient build() {
         ClientChannelBuilder channelBuilder = ClientChannelBuilderImpl
                 .create(() -> transportFactory.create(getEndpoint()), getEndpoint())
+                .withAutoNotifyReceipt(autoNotify)
                 .addCommandModule(c -> new ReplyPingChannelModule(c))
                 .addBuiltHandler(c -> {
                     if (throughputInSeconds > 0) ThroughputControlChannelModule.createAndRegister(c, throughputInSeconds);
@@ -245,7 +246,4 @@ public final class BlipClientBuilder {
             throw new RuntimeException(e);
         }
     }
-
-
-
 }

@@ -73,8 +73,15 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
             if (isEstablished()) {
                 clientChannel.sendFinishingSession();
 
+                long finishTimeout;
+                if (timeout > 0) {
+                    finishTimeout = TimeUnit.MILLISECONDS.convert(timeout, timeoutTimeUnit);
+                } else {
+                    finishTimeout = defaultTimeout;
+                }
+
                 if (finishedSessionChannelListenerSemaphore != null
-                        && !finishedSessionChannelListenerSemaphore.tryAcquire(timeout, timeoutTimeUnit)) {
+                        && !finishedSessionChannelListenerSemaphore.tryAcquire(finishTimeout, TimeUnit.MILLISECONDS)) {
                     throw new TimeoutException("Could not finish the active session in the configured timeout");
                 }
 
@@ -108,7 +115,7 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
 
     @Override
     public void sendCommand(Command command) throws IOException {
-        sendAsync(channel -> channel.sendCommand(command));
+        send(channel -> channel.sendCommand(command));
     }
 
     @Override
@@ -135,10 +142,11 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
             try {
                 ClientChannel channel = getChannel("processCommand", timeoutMilliseconds - (System.currentTimeMillis() - startTime), TimeUnit.MILLISECONDS);
                 return channel.processCommand(requestCommand, timeout, timeoutTimeUnit);
+            } catch (IllegalArgumentException e) {
+                throw e;
             } catch (TimeoutException | InterruptedException e) {
                 throw new TimeoutException("Could not process the command in the specified timeout");
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -148,7 +156,7 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
 
     @Override
     public void sendMessage(Message message) throws IOException {
-        sendAsync(channel -> channel.sendMessage(message));
+        send(channel -> channel.sendMessage(message));
     }
 
     @Override
@@ -166,7 +174,7 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
 
     @Override
     public void sendNotification(Notification notification) throws IOException {
-        sendAsync(channel -> channel.sendNotification(notification));
+        send(channel -> channel.sendNotification(notification));
     }
 
     @Override
@@ -316,16 +324,17 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
         }
     }
 
-    private void sendAsync(ClientChannelAction action) {
+    private void send(ClientChannelAction action) {
         while (!isFinishing) {
             try {
                 ClientChannel channel = getChannel("sendCommand", defaultTimeout, defaultTimeoutTimeUnit);
                 action.execute(channel);
                 return;
+            } catch (IllegalArgumentException e) {
+                throw e;
             } catch (TimeoutException e) {
                 throw new RuntimeException(e);
-            }
-            catch (Exception e) {
+            }  catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -370,14 +379,7 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
          */
         @Override
         public void onClosed() {
-            while (!isFinishing) {
-                try {
-                    // Try recreate the channel
-                    establish();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
+            tryEstablish();
         }
 
         /**
@@ -388,10 +390,15 @@ public class OnDemandClientChannelImpl implements OnDemandClientChannel {
         @Override
         public void onException(Exception exception) {
             exception.printStackTrace();
+            tryEstablish();
+        }
+
+        private void tryEstablish() {
             while (!isFinishing) {
                 try {
                     // Try recreate the channel
                     establish();
+                    break;
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
