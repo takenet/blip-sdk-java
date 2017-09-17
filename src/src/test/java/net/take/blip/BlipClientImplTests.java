@@ -1,6 +1,7 @@
 package net.take.blip;
 
 import org.junit.Test;
+import org.limeprotocol.client.OnDemandClientChannel;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;

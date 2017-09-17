@@ -23,6 +23,7 @@ public class Sample {
 
         BlipClient client = builder.build();
 
+
         client.addMessageListener(envelope -> {
             try {
                 client.sendMessage("Pong!", envelope.getFrom());

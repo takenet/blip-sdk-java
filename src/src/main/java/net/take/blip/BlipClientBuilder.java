@@ -1,11 +1,10 @@
 package net.take.blip;
 
 import org.limeprotocol.*;
-import org.limeprotocol.client.ClientChannel;
+import org.limeprotocol.client.*;
 import org.limeprotocol.messaging.resources.Presence;
 import org.limeprotocol.messaging.resources.Receipt;
 import org.limeprotocol.messaging.resources.UriTemplates;
-import org.limeprotocol.network.ChannelExtensions;
 import org.limeprotocol.network.modules.ReplyPingChannelModule;
 import org.limeprotocol.network.modules.ThroughputControlChannelModule;
 import org.limeprotocol.security.Authentication;

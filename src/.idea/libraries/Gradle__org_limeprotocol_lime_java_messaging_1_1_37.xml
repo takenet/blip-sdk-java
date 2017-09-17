@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: org.limeprotocol:lime-java-messaging:1.1.37">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.limeprotocol/lime-java-messaging/1.1.37/2ea9c0465bf0fa6f111efccac9cd1e0e96071c74/lime-java-messaging-1.1.37.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.limeprotocol/lime-java-messaging/1.1.37/8035dff7bd6073bc0307a2432a631f02e5c9efd3/lime-java-messaging-1.1.37-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: org.limeprotocol:lime-java-tcp:1.1.37">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.limeprotocol/lime-java-tcp/1.1.37/e43c290be7e3f2232ea66505365ca6cbbaf47c54/lime-java-tcp-1.1.37.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.limeprotocol/lime-java-tcp/1.1.37/381f46c390e9297554b1b94abd4259c94f89345b/lime-java-tcp-1.1.37-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

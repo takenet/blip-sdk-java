@@ -4,6 +4,7 @@ import org.limeprotocol.Command;
 import org.limeprotocol.Envelope;
 import org.limeprotocol.Message;
 import org.limeprotocol.Notification;
+import org.limeprotocol.client.OnDemandClientChannel;
 import org.limeprotocol.messaging.Registrator;
 import org.limeprotocol.network.CommandChannel;
 import org.limeprotocol.network.MessageChannel;

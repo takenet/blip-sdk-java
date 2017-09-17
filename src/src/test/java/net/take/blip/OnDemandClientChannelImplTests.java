@@ -1,5 +1,8 @@
 package net.take.blip;
 
+import org.limeprotocol.client.EstablishedClientChannelBuilder;
+import org.limeprotocol.client.OnDemandClientChannelImpl;
+
 import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Mockito.mock;
