@@ -95,7 +95,7 @@ public class BlipClientImpl implements BlipClient {
     }
 
     @Override
-    public Sender addMessageListener(MessageListener messageListener, Predicate<Message> messageFilter) {
+    public BlipClient addMessageListener(MessageListener messageListener, Predicate<Message> messageFilter) {
         Objects.requireNonNull(messageListener);
         onDemandClientChannel.addMessageListener(
                 message -> receiveEnvelope(message, messageListener::onReceive, messageFilter),false);
@@ -103,7 +103,7 @@ public class BlipClientImpl implements BlipClient {
     }
 
     @Override
-    public Sender addCommandListener(CommandListener commandListener, Predicate<Command> commandFilter) {
+    public BlipClient addCommandListener(CommandListener commandListener, Predicate<Command> commandFilter) {
         Objects.requireNonNull(commandListener);
         onDemandClientChannel.addCommandListener(
                 command -> receiveEnvelope(command, commandListener::onReceive, commandFilter),false);
@@ -111,7 +111,7 @@ public class BlipClientImpl implements BlipClient {
     }
 
     @Override
-    public Sender addNotificationListener(NotificationListener notificationListener, Predicate<Notification> notificationFilter) {
+    public BlipClient addNotificationListener(NotificationListener notificationListener, Predicate<Notification> notificationFilter) {
         Objects.requireNonNull(notificationListener);
         onDemandClientChannel.addNotificationListener(
                 notification -> receiveEnvelope(notification, notificationListener::onReceive, notificationFilter),false);

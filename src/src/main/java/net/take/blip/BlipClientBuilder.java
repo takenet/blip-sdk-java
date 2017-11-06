@@ -20,6 +20,9 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+/**
+ * Utility class for building instances of 'BlipClient'.
+ */
 public final class BlipClientBuilder {
 
     private final TransportFactory transportFactory;
